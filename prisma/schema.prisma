@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+enum UserRole {
+  ADMIN
+  NGO_USER
+  PUBLIC_USER
+}
+
+model User {
+  id            Int       @id @default(autoincrement())
+  email         String    @unique
+  password      String
+  name          String?
+  role          UserRole  @default(PUBLIC_USER)
+  twoFactorAuth Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  ngo           NGO?      @relation(fields: [ngoId], references: [id])
+  ngoId         Int?
+  auditLogs     AuditLog[]
+}
+
+model NGO {
+  id                Int       @id @default(autoincrement())
+  name              String
+  physicalAddress   String
+  operationalAddress String
+  domains          String[]  // Stored as JSON
+  description      String
+  resources        String    // Stored as JSON
+  geographicAreas  String[]  // Stored as JSON
+  contactEmail     String
+  contactPhone     String
+  contactPerson    String
+  isApproved       Boolean   @default(false)
+  documents        Document[]
+  users           User[]
+  workPlans       WorkPlan[]
+  reports         Report[]
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  deletedAt       DateTime?  // For soft delete
+}
+
+model Document {
+  id        Int      @id @default(autoincrement())
+  name      String
+  path      String
+  type      String
+  size      Int
+  ngo       NGO      @relation(fields: [ngoId], references: [id])
+  ngoId     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model WorkPlan {
+  id          Int       @id @default(autoincrement())
+  year        Int
+  activities  String    // Stored as JSON
+  budget      Float
+  ngo         NGO       @relation(fields: [ngoId], references: [id])
+  ngoId       Int
+  reports     Report[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Report {
+  id          Int       @id @default(autoincrement())
+  period      String    // e.g., "2024-H1"
+  progress    String    // Stored as JSON
+  challenges  String?
+  successes   String?
+  workPlan    WorkPlan  @relation(fields: [workPlanId], references: [id])
+  workPlanId  Int
+  ngo         NGO       @relation(fields: [ngoId], references: [id])
+  ngoId       Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  action      String
+  details     String
+  user        User     @relation(fields: [userId], references: [id])
+  userId      Int
+  createdAt   DateTime @default(now())
+}
